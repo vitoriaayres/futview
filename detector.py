@@ -160,7 +160,7 @@ while cap.isOpened():
         for track_id, points in track_history.items():
             
             for i in range(1, len(points)):
-                cv2.line(annotated_frame, points[i - 1], points[i], (0, 255, 0), 2) # Linha verde
+                cv2.line(annotated_frame, points[i - 1], points[i], (0, 255, 0), 2) 
 
 
         height, width, _ = annotated_frame.shape
@@ -168,20 +168,18 @@ while cap.isOpened():
         
         cv2.imshow("FUTVIEW RASTREAMENTO)", small_frame) 
 
-        # --- 7. Sair do Loop ---
+    
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
     else:
         break
 
-# --- 8. Limpeza ---
 cap.release()
 cv2.destroyAllWindows()
 
 print("--- Processamento Concluído ---")
 print("Histórico de rastreamento foi capturado.")
 
-# (Opcional) Mostra os dados de um jogador (ex: o primeiro ID que apareceu)
 if track_history:
     first_tracked_id = list(track_history.keys())[0]
     print(f"Exemplo de dados (ID: {first_tracked_id}):")
@@ -191,14 +189,12 @@ import cv2
 from ultralytics import YOLO
 import os
 from collections import defaultdict
-import numpy as np                 # NOVO: Para manipulação de dados
+import numpy as np                 
 import matplotlib.pyplot as plt    
 import seaborn as sns              
 
-# --- 1. Carregar o Modelo ---
 model = YOLO('yolov8n.pt')
 
-# --- 2. Abrir o Vídeo ---
 video_path = 'partida.mp4'
 if not os.path.exists(video_path):
     print(f"--- ERRO --- O arquivo '{video_path}' NÃO FOI ENCONTRADO.")
@@ -209,28 +205,24 @@ if not cap.isOpened():
     print(f"--- ERRO --- O OpenCV NÃO CONSEGUIU ABRIR o vídeo: '{video_path}'.")
     exit()
 
-# --- NOVO: Variáveis para o Heatmap ---
 track_history = defaultdict(lambda: [])
-primeiro_frame = None  # Vamos guardar o primeiro frame para usar de fundo
+primeiro_frame = None  
 video_height = 0
 video_width = 0
 
-# --- 3. Loop Principal (Frame por Frame) ---
 print(">>> Processando vídeo com RASTREAMENTO. Pressione 'q' para sair...")
 
-frame_index = 0 # Contador de frames
+frame_index = 0 
 while cap.isOpened():
     success, frame = cap.read()
     if success:
-        # --- NOVO: Salvar o primeiro frame e as dimensões ---
+       
         if frame_index == 0:
-            primeiro_frame = frame.copy() # Salva uma cópia
+            primeiro_frame = frame.copy() 
             video_height, video_width, _ = frame.shape
         frame_index += 1
 
-        # --- 4. Rastreamento ---
-        results = model.track(frame, persist=True, conf=0.5, classes=[0]) # Só rastreia pessoas
-
+        results = model.track(frame, persist=True, conf=0.5, classes=[0]) 
         if results[0].boxes.id is not None:
             boxes = results[0].boxes.xyxy.cpu().numpy()
             track_ids = results[0].boxes.id.cpu().numpy().astype(int)
@@ -241,47 +233,40 @@ while cap.isOpened():
                 point = (int(x_center), int(y_bottom))
                 track_history[track_id].append(point)
 
-        # --- 5. Desenhar Resultados no Vídeo ---
         annotated_frame = results[0].plot()
         
-        # (Opcional) Desenhar o rastro no vídeo
         for track_id, points in track_history.items():
             for i in range(1, len(points)):
                 cv2.line(annotated_frame, points[i - 1], points[i], (0, 255, 0), 2)
 
-        # --- 6. Mostrar o Vídeo ---
+   
         small_frame = cv2.resize(annotated_frame, (int(video_width * 0.5), int(video_height * 0.5)))
         cv2.imshow("FUTVIEW RASTREAMENTO", small_frame)
 
-        # --- 7. Sair do Loop ---
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
     else:
         break
 
-# --- 8. Limpeza (Libera o vídeo e fecha as janelas) ---
 cap.release()
 cv2.destroyAllWindows()
 print("--- Processamento de vídeo Concluído ---")
 
-# --- 9. NOVO: Gerar o Heatmap ---
 print(">>> Gerando Heatmap...")
 
 if not track_history or primeiro_frame is None:
     print("Não foram capturados dados suficientes para gerar o heatmap.")
 else:
-    # Criar listas para todos os pontos x e y de todos os jogadores
     all_x_points = []
     all_y_points = []
     
     for track_id, points in track_history.items():
-        # Filtro opcional: ignora rastros muito curtos (ex: menos de 10 pontos)
         if len(points) < 10:
             continue
             
         for point in points:
-            all_x_points.append(point[0]) # Adiciona o x
-            all_y_points.append(point[1]) # Adiciona o y
+            all_x_points.append(point[0]) 
+            all_y_points.append(point[1]) 
 
     if not all_x_points:
         print("Nenhum rastro longo o suficiente foi encontrado.")
